@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.sabik.assistantenabler"
+    android:installLocation="internalOnly" >
+
+    <application
+        tools:ignore="GoogleAppIndexingWarning"
+        android:allowBackup="true"
+        android:fullBackupContent="@xml/backupscheme"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name">
+
+        <meta-data
+            android:name="xposedmodule"
+            android:value="true" />
+        <meta-data
+            tools:ignore="ManifestResource"
+            android:name="xposeddescription"
+            android:value="@string/app_description" />
+        <meta-data
+            android:name="xposedminversion"
+            android:value="53" />
+
+    </application>
+
+</manifest>
