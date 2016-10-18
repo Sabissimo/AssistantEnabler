@@ -1,10 +1,12 @@
 package com.sabik.assistantenabler;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XC_MethodReplacement;
+import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
 import static de.robv.android.xposed.XposedBridge.log;
@@ -18,11 +20,36 @@ public class AssistantEnabler implements IXposedHookLoadPackage {
 	private static final String PACKAGE_NAME = "com.google.android.googlequicksearchbox";
 	private static final String GSA_PACKAGE = "com.google.android.apps.gsa";
 	private static final String ASSISTANT_PACKAGE = GSA_PACKAGE + ".assistant";
+	private String bhX = "bhX";
 
-	@Override
+    @Override
 	public void handleLoadPackage(LoadPackageParam lpparam) throws Throwable {
 		if (!PACKAGE_NAME.equals(lpparam.packageName))
 			return;
+
+		Object activityThread = XposedHelpers.callStaticMethod(XposedHelpers.findClass("android.app.ActivityThread", null), "currentActivityThread");
+		Context context = (Context) XposedHelpers.callMethod(activityThread, "getSystemContext");
+		String versionName = context.getPackageManager().getPackageInfo(lpparam.packageName, 0).versionName;
+
+        String aG;
+        String pa;
+        String oZ;
+        String pb;
+        if (versionName.matches("6.6.*")) {
+			bhX = "bhX";
+			aG = "aG";
+			pa = "pa";
+			oZ = "oZ";
+			pb = "pb";
+		} else if (versionName.matches("6.7.*")) {
+			bhX = "biJ";
+			aG = "aK";
+			pa = "pc";
+			oZ = "pb";
+			pb = "pd";
+		} else {
+			return;
+		}
 
 		try {
 			Class a = findClass(ASSISTANT_PACKAGE + ".a.e", lpparam.classLoader);
@@ -30,7 +57,7 @@ public class AssistantEnabler implements IXposedHookLoadPackage {
 			findAndHookConstructor(a, findClass("com.google.android.apps.gsa.search.core.config.GsaConfigFlags", lpparam.classLoader), SharedPreferences.class, new XC_MethodHook() {
 				@Override
 				protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-					SharedPreferences prefs = (SharedPreferences) getObjectField(param.thisObject, "bhX");
+					SharedPreferences prefs = (SharedPreferences) getObjectField(param.thisObject, bhX);
 					prefs.edit().putBoolean("key_opa_eligible", true)
 							.putBoolean("opa_enabled", true)
 							.putBoolean("opa_hotword_enabled", true)
@@ -38,28 +65,28 @@ public class AssistantEnabler implements IXposedHookLoadPackage {
 				}
 			});
 
-			findAndHookMethod(a, "aG", boolean.class, new XC_MethodHook() {
+			findAndHookMethod(a, aG, boolean.class, new XC_MethodHook() {
 				@Override
 				protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
 					param.args[0] = true;
 				}
 			});
 
-			findAndHookMethod(a, "pa", new XC_MethodReplacement() {
+			findAndHookMethod(a, pa, new XC_MethodReplacement() {
 				@Override
 				protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
 					return true;
 				}
 			});
 
-			findAndHookMethod(a, "oZ", new XC_MethodReplacement() {
+			findAndHookMethod(a, oZ, new XC_MethodReplacement() {
 				@Override
 				protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
 					return true;
 				}
 			});
 
-			findAndHookMethod(a, "pb", new XC_MethodReplacement() {
+			findAndHookMethod(a, pb, new XC_MethodReplacement() {
 				@Override
 				protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
 					return true;
