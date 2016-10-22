@@ -22,7 +22,7 @@ public class AssistantEnabler implements IXposedHookLoadPackage {
 	private static final String ASSISTANT_PACKAGE = GSA_PACKAGE + ".assistant";
 	private String bhX = "bhX";
 
-    @Override
+    	@Override
 	public void handleLoadPackage(LoadPackageParam lpparam) throws Throwable {
 		if (!PACKAGE_NAME.equals(lpparam.packageName))
 			return;
