@@ -3,5 +3,13 @@
 
     <string name="app_name">Assistant Enabler</string>
     <string name="app_description">Enable Google Assistant in Marshmallow ROMs</string>
+    <string name="enable_assistant">Enable Assistant</string>
+    <string name="hide_from_launcher">Hide from launcher</string>
+    <string name="hide_application_icon_from_launcher">Hide application icon from launcher</string>
+    <string name="enable_google_assistant">Enable Google Assistant</string>
+    <string name="enable_google_now">Enable Google Now (requires restart)</string>
+    <string name="enable_google_now_in_not_eligible_coutries">Enable Google Now in not eligible countries</string>
+    <string name="donate">Donate</string>
+    <string name="if_you_would_like_to_support_this_project_s_further_development_the_creator_of_this_project_or_the_continuous_maintenance_of_this_project_feel_free_to_donate">If you would like to support this project\'s further development, the creator of this project or the continuous maintenance of this project, feel free to donate.</string>
 
 </resources>
