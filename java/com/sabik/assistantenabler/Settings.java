@@ -31,7 +31,7 @@ public class Settings extends AppCompatActivity {
         Button donateButton = (Button) findViewById(R.id.donateButton);
 
         if (googleNowEnabled!=null) {
-            googleNowEnabled.setChecked(prefs.getBoolean("googleNowEnabled",true));
+            googleNowEnabled.setChecked(prefs.getBoolean("googleNowEnabled",false));
             googleNowEnabled.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 

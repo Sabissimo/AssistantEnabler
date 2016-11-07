@@ -1,11 +1,9 @@
 package com.sabik.assistantenabler;
 
-//import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
-//import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -178,8 +176,14 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
         protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
             prefs.reload();
             boolean assistantEnabled = prefs.getBoolean("assistantEnabled", true);
-            if (param.args[0].toString().equals("ro.opa.eligible_device")&&assistantEnabled) {
-                param.setResult(true);
+            try {
+                if (param.args[0].toString().equals("ro.opa.eligible_device")&&assistantEnabled) {
+                    param.setResult(true);
+                }
+            }
+            catch (Throwable ignored)
+            {
+
             }
         }
     };
