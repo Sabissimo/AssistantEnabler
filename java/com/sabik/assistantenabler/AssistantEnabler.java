@@ -31,7 +31,6 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
     private static final String GSA_PACKAGE = "com.google.android.apps.gsa";
     private static final String ASSISTANT_PACKAGE = GSA_PACKAGE + ".assistant.a.e";
     private static final String CONFIG_FLAGS_PACKAGE = GSA_PACKAGE + ".search.core.config.GsaConfigFlags";
-    private static final String HOTWORD_TRANSITION_PACKAGE = GSA_PACKAGE + ".opa.ae";
     private static final String TELEPHONY_CLASS = "android.telephony.TelephonyManager";
     private static final List<String> NOW_PACKAGE_NAMES = new ArrayList<>(Arrays.asList("com.google.android.gms", "com.google.android.apps.maps"));
     private String googleBHX;
@@ -108,7 +107,7 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
             googleSharedUtilsC = ".shared.util.c";
             googleSharedUtilsV = "v";
             googleHotwordAE = ".opa.ae";
-            googleHotwordX = "w";
+            googleHotwordX = "x";
         } else if (versionName.matches("6.8.*")) {
             googleBHX = "bnp";
             googleAG = "aK";
@@ -152,10 +151,12 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
         protected void afterHookedMethod(MethodHookParam param) throws Throwable {
             prefs.reload();
             boolean assistantEnabled = prefs.getBoolean("assistantEnabled", true);
-            SharedPreferences googlePrefs = (SharedPreferences) getObjectField(param.thisObject, googleBHX);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD) {
-                googlePrefs.edit().putBoolean("key_opa_eligible", assistantEnabled)
-                        .putBoolean("opa_enabled", assistantEnabled).apply();
+            if(assistantEnabled) {
+                SharedPreferences googlePrefs = (SharedPreferences) getObjectField(param.thisObject, googleBHX);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD) {
+                    googlePrefs.edit().putBoolean("key_opa_eligible", true)
+                            .putBoolean("opa_enabled", true).apply();
+                }
             }
         }
     };
@@ -165,7 +166,9 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
         protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
             prefs.reload();
             boolean assistantEnabled = prefs.getBoolean("assistantEnabled", true);
-            param.args[0] = assistantEnabled;
+            if(assistantEnabled) {
+                param.args[0] = true;
+            }
         }
     };
 
@@ -215,7 +218,10 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
         @Override
         protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
             prefs.reload();
-            param.setResult(!prefs.getBoolean("assistantEnabled", true));
+            if(prefs.getBoolean("assistantEnabled", true))
+            {
+                param.setResult(false);
+            }
         }
     };
 
