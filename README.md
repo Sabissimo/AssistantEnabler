@@ -12,7 +12,13 @@ Simply grab the module from [the Xposed Module Repository](http://repo.xposed.in
 To make a build build on your own device from source, feel free to clone this repository and use Gradle for that. You can read more about how to build locally on [Android Developers](https://developer.android.com/tools/building/building-cmdline.html) or just Google around.
 
 
-
+#To use "OK Google" hotword you need to do following:
+1. Disable assistant in module
+2. Configure "OK Google" detection and voice pattern
+3. Enable assistant in module
+4. Say "OK Google"
+5. ....
+6. Profit!
 
 # In order to enable Google Now in unsupported country, these steps are required:
 * 1) Enable Assistant Enabler module in Xposed Installer
