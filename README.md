@@ -13,12 +13,16 @@ To make a build build on your own device from source, feel free to clone this re
 
 
 #To use "OK Google" hotword you need to do following:
-1. Disable assistant in module
-2. Configure "OK Google" detection and voice pattern
-3. Enable assistant in module
-4. Say "OK Google"
-5. ....
-6. Profit!
+* 1. Update Google App to the latest version (at least 6.8 beta)
+* 2. Disable assistant in module
+* 3. Configure "OK Google" detection and voice pattern
+* 4. Enable assistant in module
+* 5. Say "OK Google"
+* 6. ....
+* 7. Profit!
+
+# Enable "OK Google" with screen off (even when not charging)
+* After enabling it in module settings, plug/unplug your charger for settings to kick in
 
 # In order to enable Google Now in unsupported country, these steps are required:
 * 1) Enable Assistant Enabler module in Xposed Installer
