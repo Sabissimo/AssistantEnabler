@@ -26,6 +26,7 @@ public class Settings extends AppCompatActivity {
         final SharedPreferences.Editor editor = prefs.edit();
         context = getApplicationContext();
         Switch assistantEnabled = (Switch) findViewById(R.id.assistantEnabled);
+        Switch enableOKGoogleEverywhere = (Switch) findViewById(R.id.enableOKGoogleEverywhere);
         Switch googleNowEnabled = (Switch) findViewById(R.id.googleNowEnabled);
         Switch hiddenIcon = (Switch) findViewById(R.id.hiddenIcon);
         Button donateButton = (Button) findViewById(R.id.donateButton);
@@ -48,6 +49,18 @@ public class Settings extends AppCompatActivity {
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 
                     editor.putBoolean("assistantEnabled", isChecked);
+                    editor.apply();
+
+                }
+            });
+        }
+
+        if (enableOKGoogleEverywhere!=null) {
+            enableOKGoogleEverywhere.setChecked(prefs.getBoolean("enableOKGoogleEverywhere",false));
+            enableOKGoogleEverywhere.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+
+                    editor.putBoolean("enableOKGoogleEverywhere", isChecked);
                     editor.apply();
 
                 }

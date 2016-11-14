@@ -29,11 +29,30 @@
         android:layout_alignParentStart="true" />
 
     <TextView
+        android:text="@string/enable_ok_google_everywhere_even_with_screen_off_might_cause_some_battery_draining"
+        android:id="@+id/textView5"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/assistantEnabled"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="23dp" />
+
+    <Switch
+        android:text="@string/enable_ok_google_everywhere"
+        android:id="@+id/enableOKGoogleEverywhere"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/textView5"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <TextView
         android:text="@string/enable_google_now_in_not_eligible_coutries"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/textView3"
-        android:layout_below="@+id/assistantEnabled"
+        android:layout_below="@+id/enableOKGoogleEverywhere"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
         android:layout_marginTop="23dp" />

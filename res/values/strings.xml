@@ -11,5 +11,7 @@
     <string name="enable_google_now_in_not_eligible_coutries">Enable Google Now in not eligible countries</string>
     <string name="donate">Donate</string>
     <string name="if_you_would_like_to_support_this_project_s_further_development_the_creator_of_this_project_or_the_continuous_maintenance_of_this_project_feel_free_to_donate">If you would like to support this project\'s further development, the creator of this project or the continuous maintenance of this project, feel free to donate.</string>
+    <string name="enable_ok_google_everywhere">Enable OK Google everywhere</string>
+    <string name="enable_ok_google_everywhere_even_with_screen_off_might_cause_some_battery_draining">Enable OK Google everywhere, even with screen off (might cause some battery draining). After changing this, plug/unplug your charger for setting to kick in.</string>
 
 </resources>
