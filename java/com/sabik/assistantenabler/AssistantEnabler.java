@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Bundle;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,7 +29,9 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
     private XSharedPreferences prefs;
     private static final String GOOGLE_PACKAGE_NAME = "com.google.android.googlequicksearchbox";
     private static final String GSA_PACKAGE = "com.google.android.apps.gsa";
-    private static final String ASSISTANT_PACKAGE = GSA_PACKAGE + ".assistant";
+    private static final String ASSISTANT_PACKAGE = GSA_PACKAGE + ".assistant.a.e";
+    private static final String CONFIG_FLAGS_PACKAGE = GSA_PACKAGE + ".search.core.config.GsaConfigFlags";
+    private static final String HOTWORD_TRANSITION_PACKAGE = GSA_PACKAGE + ".opa.ae";
     private static final String TELEPHONY_CLASS = "android.telephony.TelephonyManager";
     private static final List<String> NOW_PACKAGE_NAMES = new ArrayList<>(Arrays.asList("com.google.android.gms", "com.google.android.apps.maps"));
     private String googleBHX;
@@ -36,6 +39,10 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
     private String googlePA;
     private String googleOZ;
     private String googlePB;
+    private String googleSharedUtilsC;
+    private String googleSharedUtilsV;
+    private String googleHotwordAE;
+    private String googleHotwordX;
 
     @Override
     public void initZygote(IXposedHookZygoteInit.StartupParam startupParam) throws Throwable {
@@ -48,15 +55,18 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
         prefs.reload();
         if (GOOGLE_PACKAGE_NAME.equals(lpparam.packageName) && prefs.getBoolean("assistantEnabled", true) && checkVersion(lpparam)) {
             try {
-                Class assistantClass = findClass(ASSISTANT_PACKAGE + ".a.e", lpparam.classLoader);
-                Class gsaConfigFlagsClass = findClass("com.google.android.apps.gsa.search.core.config.GsaConfigFlags", lpparam.classLoader);
+                Class assistantClass = findClass(ASSISTANT_PACKAGE, lpparam.classLoader);
+                Class gsaConfigFlagsClass = findClass(CONFIG_FLAGS_PACKAGE, lpparam.classLoader);
+                Class sharedUtilsClass = findClass(GSA_PACKAGE + googleSharedUtilsC, lpparam.classLoader);
+                Class hotwordTransitionClass = findClass(GSA_PACKAGE + googleHotwordAE, lpparam.classLoader);
 
                 findAndHookConstructor(assistantClass, gsaConfigFlagsClass, SharedPreferences.class, assistantBHXHook);
                 findAndHookMethod(assistantClass, googleAG, boolean.class, assistantAGHook);
                 findAndHookMethod(assistantClass, googlePA, assistantPAHook);
                 findAndHookMethod(assistantClass, googleOZ, assistantOZHook);
                 findAndHookMethod(assistantClass, googlePB, assistantPBHook);
-                findAndHookMethod(GSA_PACKAGE + ".shared.util.c", lpparam.classLoader, "v", String.class, boolean.class, assistantGSAHook);
+                findAndHookMethod(sharedUtilsClass, googleSharedUtilsV, String.class, boolean.class, assistantGSAHook);
+                findAndHookMethod(hotwordTransitionClass, googleHotwordX, Bundle.class, hotwordSkipHook);
             } catch (Throwable t) {
                 log(t);
             }
@@ -85,18 +95,30 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
             googlePA = "pa";
             googleOZ = "oZ";
             googlePB = "pb";
+            googleSharedUtilsC = ".shared.util.c";
+            googleSharedUtilsV = "v";
+            googleHotwordAE = ".opa.ag";
+            googleHotwordX = "z";
         } else if (versionName.matches("6.7.*")) {
             googleBHX = "biJ";
             googleAG = "aK";
             googlePA = "pc";
             googleOZ = "pb";
             googlePB = "pd";
+            googleSharedUtilsC = ".shared.util.c";
+            googleSharedUtilsV = "v";
+            googleHotwordAE = ".opa.ae";
+            googleHotwordX = "w";
         } else if (versionName.matches("6.8.*")) {
             googleBHX = "bnp";
             googleAG = "aK";
             googlePA = "pU";
             googleOZ = "pT";
             googlePB = "pV";
+            googleSharedUtilsC = ".shared.util.common.a";
+            googleSharedUtilsV = "y";
+            googleHotwordAE = ".opa.ae";
+            googleHotwordX = "x";
         } else {
             return false;
         }
@@ -174,17 +196,26 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
     private XC_MethodHook assistantGSAHook = new XC_MethodHook() {
         @Override
         protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+            if (param.args == null)
+                return;
+            if (param.args.length < 1)
+                return;
+            if (!(param.args[0] instanceof String))
+                return;
             prefs.reload();
+            String key = (String) param.args[0];
             boolean assistantEnabled = prefs.getBoolean("assistantEnabled", true);
-            try {
-                if (param.args[0].toString().equals("ro.opa.eligible_device")&&assistantEnabled) {
-                    param.setResult(true);
-                }
+            if (key.equals("ro.opa.eligible_device")&&assistantEnabled) {
+                param.setResult(true);
             }
-            catch (Throwable ignored)
-            {
+        }
+    };
 
-            }
+    private XC_MethodHook hotwordSkipHook = new XC_MethodHook() {
+        @Override
+        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+            prefs.reload();
+            param.setResult(!prefs.getBoolean("assistantEnabled", true));
         }
     };
 
