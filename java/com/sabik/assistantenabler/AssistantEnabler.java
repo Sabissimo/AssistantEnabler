@@ -29,21 +29,21 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
     private XSharedPreferences prefs;
     private static final String GOOGLE_PACKAGE_NAME = "com.google.android.googlequicksearchbox";
     private static final String GSA_PACKAGE = "com.google.android.apps.gsa";
-    private static final String ASSISTANT_PACKAGE = GSA_PACKAGE + ".assistant.a.e";
     private static final String CONFIG_FLAGS_PACKAGE = GSA_PACKAGE + ".search.core.config.GsaConfigFlags";
     private static final String TELEPHONY_CLASS = "android.telephony.TelephonyManager";
-    private static final String BROADCAST_LISTENER_CLASS = "com.google.android.apps.gsa.search.core.BroadcastListenerService";
     private static final List<String> NOW_PACKAGE_NAMES = new ArrayList<>(Arrays.asList("com.google.android.gms", "com.google.android.apps.maps"));
-    private String googleBHX;
-    private String googleAG;
-    private String googlePA;
-    private String googleOZ;
-    private String googlePB;
-    private String googleSharedUtilsC;
-    private String googleSharedUtilsV;
-    private String googleHotwordAE;
-    private String googleHotwordX;
-    private String googleBroadcastListenerServiceE;
+    private static final String BROADCAST_LISTENER_CLASS = "com.google.android.apps.gsa.search.core.BroadcastListenerService";
+    private String sharedPreferencesVariable;
+    private String detectionMethod1;
+    private String detectionMethod2;
+    private String detectionMethod3;
+    private String detectionMethod4;
+    private String sharedUtilsClassName;
+    private String sharedUtilsMethod;
+    private String hotwordDetectionClassName;
+    private String hotwordDetectionMethod;
+    private String broadcastListenerServiceMethod;
+    private String assistantClassName;
 
     @Override
     public void initZygote(IXposedHookZygoteInit.StartupParam startupParam) throws Throwable {
@@ -56,20 +56,20 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
         prefs.reload();
         if (GOOGLE_PACKAGE_NAME.equals(lpparam.packageName) && checkVersion(lpparam)) {
             try {
-                Class assistantClass = findClass(ASSISTANT_PACKAGE, lpparam.classLoader);
+                Class assistantClass = findClass(GSA_PACKAGE + assistantClassName, lpparam.classLoader);
                 Class gsaConfigFlagsClass = findClass(CONFIG_FLAGS_PACKAGE, lpparam.classLoader);
-                Class sharedUtilsClass = findClass(GSA_PACKAGE + googleSharedUtilsC, lpparam.classLoader);
-                Class hotwordTransitionClass = findClass(GSA_PACKAGE + googleHotwordAE, lpparam.classLoader);
+                Class sharedUtilsClass = findClass(GSA_PACKAGE + sharedUtilsClassName, lpparam.classLoader);
+                Class hotWordTransitionClass = findClass(GSA_PACKAGE + hotwordDetectionClassName, lpparam.classLoader);
                 Class broadcastListenerServiceClass = findClass(BROADCAST_LISTENER_CLASS, lpparam.classLoader);
 
-                findAndHookConstructor(assistantClass, gsaConfigFlagsClass, SharedPreferences.class, assistantBHXHook);
-                findAndHookMethod(assistantClass, googleAG, boolean.class, assistantAGHook);
-                findAndHookMethod(assistantClass, googlePA, assistantPAHook);
-                findAndHookMethod(assistantClass, googleOZ, assistantOZHook);
-                findAndHookMethod(assistantClass, googlePB, assistantPBHook);
-                findAndHookMethod(sharedUtilsClass, googleSharedUtilsV, String.class, boolean.class, assistantGSAHook);
-                findAndHookMethod(hotwordTransitionClass, googleHotwordX, Bundle.class, hotwordSkipHook);
-                findAndHookMethod(broadcastListenerServiceClass, googleBroadcastListenerServiceE, Context.class, boolean.class, listenerHook);
+                findAndHookConstructor(assistantClass, gsaConfigFlagsClass, SharedPreferences.class, sharedPreferencesHook);
+                findAndHookMethod(assistantClass, detectionMethod1, boolean.class, detectionMethod1Hook);
+                findAndHookMethod(assistantClass, detectionMethod2, detectionMethod2Hook);
+                findAndHookMethod(assistantClass, detectionMethod3, detectionMethod3Hook);
+                findAndHookMethod(assistantClass, detectionMethod4, detectionMethod4Hook);
+                findAndHookMethod(sharedUtilsClass, sharedUtilsMethod, String.class, boolean.class, sharedUtilsMethodHook);
+                findAndHookMethod(hotWordTransitionClass, hotwordDetectionMethod, Bundle.class, hotwordDetectionMethodHook);
+                findAndHookMethod(broadcastListenerServiceClass, broadcastListenerServiceMethod, Context.class, boolean.class, broadcastListenerServiceMethodHook);
             } catch (Throwable t) {
                 log(t);
             }
@@ -93,38 +93,53 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
         String versionName = context.getPackageManager().getPackageInfo(lpparam.packageName, 0).versionName;
 
         if (versionName.matches("6.6.*")) {
-            googleBHX = "bhX";
-            googleAG = "aG";
-            googlePA = "pa";
-            googleOZ = "oZ";
-            googlePB = "pb";
-            googleSharedUtilsC = ".shared.util.c";
-            googleSharedUtilsV = "v";
-            googleHotwordAE = ".opa.ag";
-            googleHotwordX = "z";
-            googleBroadcastListenerServiceE = "e";
+            assistantClassName = ".assistant.a.e";
+            sharedPreferencesVariable = "bhX";
+            detectionMethod1 = "aG";
+            detectionMethod2 = "pa";
+            detectionMethod3 = "oZ";
+            detectionMethod4 = "pb";
+            sharedUtilsClassName = ".shared.util.c";
+            sharedUtilsMethod = "v";
+            hotwordDetectionClassName = ".opa.ag";
+            hotwordDetectionMethod = "z";
+            broadcastListenerServiceMethod = "e";
         } else if (versionName.matches("6.7.*")) {
-            googleBHX = "biJ";
-            googleAG = "aK";
-            googlePA = "pc";
-            googleOZ = "pb";
-            googlePB = "pd";
-            googleSharedUtilsC = ".shared.util.c";
-            googleSharedUtilsV = "v";
-            googleHotwordAE = ".opa.ae";
-            googleHotwordX = "w";
-            googleBroadcastListenerServiceE = "e";
+            assistantClassName = ".assistant.a.e";
+            sharedPreferencesVariable = "biJ";
+            detectionMethod1 = "aK";
+            detectionMethod2 = "pc";
+            detectionMethod3 = "pb";
+            detectionMethod4 = "pd";
+            sharedUtilsClassName = ".shared.util.c";
+            sharedUtilsMethod = "v";
+            hotwordDetectionClassName = ".opa.ae";
+            hotwordDetectionMethod = "w";
+            broadcastListenerServiceMethod = "e";
         } else if (versionName.matches("6.8.*")) {
-            googleBHX = "bnp";
-            googleAG = "aK";
-            googlePA = "pU";
-            googleOZ = "pT";
-            googlePB = "pV";
-            googleSharedUtilsC = ".shared.util.common.a";
-            googleSharedUtilsV = "y";
-            googleHotwordAE = ".opa.ae";
-            googleHotwordX = "x";
-            googleBroadcastListenerServiceE = "e";
+            assistantClassName = ".assistant.a.e";
+            sharedPreferencesVariable = "bnp";
+            detectionMethod1 = "aK";
+            detectionMethod2 = "pU";
+            detectionMethod3 = "pT";
+            detectionMethod4 = "pV";
+            sharedUtilsClassName = ".shared.util.common.a";
+            sharedUtilsMethod = "y";
+            hotwordDetectionClassName = ".opa.ae";
+            hotwordDetectionMethod = "x";
+            broadcastListenerServiceMethod = "e";
+        } else if (versionName.matches("6.9.*")) {
+            assistantClassName = ".assistant.shared.f";
+            sharedPreferencesVariable = "bpY";
+            detectionMethod1 = "aQ";
+            detectionMethod2 = "rp";
+            detectionMethod3 = "ro";
+            detectionMethod4 = "rq";
+            sharedUtilsClassName = ".shared.util.common.a";
+            sharedUtilsMethod = "x";
+            hotwordDetectionClassName = ".opa.ae";
+            hotwordDetectionMethod = "y";
+            broadcastListenerServiceMethod = "f";
         } else {
             return false;
         }
@@ -153,13 +168,13 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
         }
     };
 
-    private XC_MethodHook assistantBHXHook = new XC_MethodHook() {
+    private XC_MethodHook sharedPreferencesHook = new XC_MethodHook() {
         @Override
         protected void afterHookedMethod(MethodHookParam param) throws Throwable {
             prefs.reload();
             boolean assistantEnabled = prefs.getBoolean("assistantEnabled", true);
             if(assistantEnabled) {
-                SharedPreferences googlePrefs = (SharedPreferences) getObjectField(param.thisObject, googleBHX);
+                SharedPreferences googlePrefs = (SharedPreferences) getObjectField(param.thisObject, sharedPreferencesVariable);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD) {
                     googlePrefs.edit().putBoolean("key_opa_eligible", true)
                             .putBoolean("opa_enabled", true).apply();
@@ -168,7 +183,7 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
         }
     };
 
-    private XC_MethodHook assistantAGHook = new XC_MethodHook() {
+    private XC_MethodHook detectionMethod1Hook = new XC_MethodHook() {
         @Override
         protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
             prefs.reload();
@@ -179,7 +194,7 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
         }
     };
 
-    private XC_MethodReplacement assistantPAHook = new XC_MethodReplacement() {
+    private XC_MethodReplacement detectionMethod2Hook = new XC_MethodReplacement() {
         @Override
         protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
             prefs.reload();
@@ -187,7 +202,7 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
         }
     };
 
-    private XC_MethodReplacement assistantOZHook = new XC_MethodReplacement() {
+    private XC_MethodReplacement detectionMethod3Hook = new XC_MethodReplacement() {
         @Override
         protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
             prefs.reload();
@@ -195,7 +210,7 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
         }
     };
 
-    private XC_MethodReplacement assistantPBHook = new XC_MethodReplacement() {
+    private XC_MethodReplacement detectionMethod4Hook = new XC_MethodReplacement() {
         @Override
         protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
             prefs.reload();
@@ -203,7 +218,7 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
         }
     };
 
-    private XC_MethodHook assistantGSAHook = new XC_MethodHook() {
+    private XC_MethodHook sharedUtilsMethodHook = new XC_MethodHook() {
         @Override
         protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
             if (param.args == null)
@@ -221,7 +236,7 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
         }
     };
 
-    private XC_MethodHook hotwordSkipHook = new XC_MethodHook() {
+    private XC_MethodHook hotwordDetectionMethodHook = new XC_MethodHook() {
         @Override
         protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
             prefs.reload();
@@ -232,7 +247,7 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
         }
     };
 
-    private XC_MethodHook listenerHook = new XC_MethodHook() {
+    private XC_MethodHook broadcastListenerServiceMethodHook = new XC_MethodHook() {
         @Override
         protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
             prefs.reload();
@@ -242,5 +257,4 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
             }
         }
     };
-
 }
