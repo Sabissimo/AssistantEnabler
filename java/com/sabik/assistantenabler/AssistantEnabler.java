@@ -1,10 +1,10 @@
 package com.sabik.assistantenabler;
 
 import android.content.Context;
-import android.content.SharedPreferences;
+import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.os.Build;
-import android.os.Bundle;
+import android.os.BaseBundle;
+import android.os.BatteryManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,7 +19,6 @@ import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
 import static de.robv.android.xposed.XposedBridge.log;
-import static de.robv.android.xposed.XposedHelpers.findAndHookConstructor;
 import static de.robv.android.xposed.XposedHelpers.findAndHookMethod;
 import static de.robv.android.xposed.XposedHelpers.findClass;
 import static de.robv.android.xposed.XposedHelpers.getObjectField;
@@ -29,21 +28,12 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
     private XSharedPreferences prefs;
     private static final String GOOGLE_PACKAGE_NAME = "com.google.android.googlequicksearchbox";
     private static final String GSA_PACKAGE = "com.google.android.apps.gsa";
-    private static final String CONFIG_FLAGS_PACKAGE = GSA_PACKAGE + ".search.core.config.GsaConfigFlags";
     private static final String TELEPHONY_CLASS = "android.telephony.TelephonyManager";
     private static final List<String> NOW_PACKAGE_NAMES = new ArrayList<>(Arrays.asList("com.google.android.gms", "com.google.android.apps.maps"));
-    private static final String BROADCAST_LISTENER_CLASS = "com.google.android.apps.gsa.search.core.BroadcastListenerService";
-    private String sharedPreferencesVariable;
     private String detectionMethod1;
     private String detectionMethod2;
-    private String detectionMethod3;
-    private String detectionMethod4;
-    private String sharedUtilsClassName;
-    private String sharedUtilsMethod;
-    private String hotwordDetectionClassName;
-    private String hotwordDetectionMethod;
-    private String broadcastListenerServiceMethod;
     private String assistantClassName;
+    private String prefsClassName;
 
     @Override
     public void initZygote(IXposedHookZygoteInit.StartupParam startupParam) throws Throwable {
@@ -57,19 +47,28 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
         if (GOOGLE_PACKAGE_NAME.equals(lpparam.packageName) && checkVersion(lpparam)) {
             try {
                 Class assistantClass = findClass(GSA_PACKAGE + assistantClassName, lpparam.classLoader);
-                Class gsaConfigFlagsClass = findClass(CONFIG_FLAGS_PACKAGE, lpparam.classLoader);
-                Class sharedUtilsClass = findClass(GSA_PACKAGE + sharedUtilsClassName, lpparam.classLoader);
-                Class hotWordTransitionClass = findClass(GSA_PACKAGE + hotwordDetectionClassName, lpparam.classLoader);
-                Class broadcastListenerServiceClass = findClass(BROADCAST_LISTENER_CLASS, lpparam.classLoader);
+                Class prefsClass = findClass(GSA_PACKAGE + prefsClassName, lpparam.classLoader);
+                Class systemPropClass = findClass("android.os.SystemProperties", lpparam.classLoader);
 
-                findAndHookConstructor(assistantClass, gsaConfigFlagsClass, SharedPreferences.class, sharedPreferencesHook);
-                findAndHookMethod(assistantClass, detectionMethod1, boolean.class, detectionMethod1Hook);
-                findAndHookMethod(assistantClass, detectionMethod2, detectionMethod2Hook);
-                findAndHookMethod(assistantClass, detectionMethod3, detectionMethod3Hook);
-                findAndHookMethod(assistantClass, detectionMethod4, detectionMethod4Hook);
-                findAndHookMethod(sharedUtilsClass, sharedUtilsMethod, String.class, boolean.class, sharedUtilsMethodHook);
-                findAndHookMethod(hotWordTransitionClass, hotwordDetectionMethod, Bundle.class, hotwordDetectionMethodHook);
-                findAndHookMethod(broadcastListenerServiceClass, broadcastListenerServiceMethod, Context.class, boolean.class, broadcastListenerServiceMethodHook);
+                // Spoof_hotword value in bundles so that the Setup Ok Google screen never shows up
+                findAndHookMethod(BaseBundle.class, "getBoolean", String.class, boolean.class, baseBundleHook);
+
+                // Spoof build.prop values
+                findAndHookMethod(systemPropClass, "getBoolean", String.class, boolean.class, systemPropHook);
+
+                // If the power has disconnected, tell Google it has connected instead
+                findAndHookMethod(Intent.class, "getAction", intentHook1);
+
+                // If Google asks status for BATTERY_CHANGED, tell it it's charging
+                findAndHookMethod(Intent.class, "getIntExtra", String.class, int.class, intentHook2);
+
+                // Spoof opa-related values in config file
+                // TODO: Find a way to make them name-independent
+                findAndHookMethod(prefsClass, "getBoolean", String.class, boolean.class, prefsHook);
+
+                // TODO: Find a way to make them name-independent
+                findAndHookMethod(assistantClass, detectionMethod1, detectionMethodHook);
+                findAndHookMethod(assistantClass, detectionMethod2, detectionMethodHook);
             } catch (Throwable t) {
                 log(t);
             }
@@ -94,52 +93,24 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
 
         if (versionName.matches("6.6.*")) {
             assistantClassName = ".assistant.a.e";
-            sharedPreferencesVariable = "bhX";
-            detectionMethod1 = "aG";
-            detectionMethod2 = "pa";
-            detectionMethod3 = "oZ";
-            detectionMethod4 = "pb";
-            sharedUtilsClassName = ".shared.util.c";
-            sharedUtilsMethod = "v";
-            hotwordDetectionClassName = ".opa.ag";
-            hotwordDetectionMethod = "z";
-            broadcastListenerServiceMethod = "e";
+            detectionMethod1 = "oZ";
+            detectionMethod2 = "pb";
+            prefsClassName = ".search.core.preferences.bf";
         } else if (versionName.matches("6.7.*")) {
             assistantClassName = ".assistant.a.e";
-            sharedPreferencesVariable = "biJ";
-            detectionMethod1 = "aK";
-            detectionMethod2 = "pc";
-            detectionMethod3 = "pb";
-            detectionMethod4 = "pd";
-            sharedUtilsClassName = ".shared.util.c";
-            sharedUtilsMethod = "v";
-            hotwordDetectionClassName = ".opa.ae";
-            hotwordDetectionMethod = "w";
-            broadcastListenerServiceMethod = "e";
+            detectionMethod1 = "pb";
+            detectionMethod2 = "pd";
+            prefsClassName = ".search.core.preferences.bg";
         } else if (versionName.matches("6.8.*")) {
             assistantClassName = ".assistant.a.e";
-            sharedPreferencesVariable = "bnp";
-            detectionMethod1 = "aK";
-            detectionMethod2 = "pU";
-            detectionMethod3 = "pT";
-            detectionMethod4 = "pV";
-            sharedUtilsClassName = ".shared.util.common.a";
-            sharedUtilsMethod = "y";
-            hotwordDetectionClassName = ".opa.ae";
-            hotwordDetectionMethod = "x";
-            broadcastListenerServiceMethod = "e";
+            detectionMethod1 = "pT";
+            detectionMethod2 = "pV";
+            prefsClassName = ".search.core.preferences.bg";
         } else if (versionName.matches("6.9.*")) {
             assistantClassName = ".assistant.shared.f";
-            sharedPreferencesVariable = "bpY";
-            detectionMethod1 = "aQ";
-            detectionMethod2 = "rp";
-            detectionMethod3 = "ro";
-            detectionMethod4 = "rq";
-            sharedUtilsClassName = ".shared.util.common.a";
-            sharedUtilsMethod = "x";
-            hotwordDetectionClassName = ".opa.ae";
-            hotwordDetectionMethod = "y";
-            broadcastListenerServiceMethod = "f";
+            detectionMethod1 = "ro";
+            detectionMethod2 = "rq";
+            prefsClassName = ".search.core.preferences.bk";
         } else {
             return false;
         }
@@ -168,92 +139,71 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
         }
     };
 
-    private XC_MethodHook sharedPreferencesHook = new XC_MethodHook() {
+    private XC_MethodReplacement detectionMethodHook = new XC_MethodReplacement() {
+        @Override
+        protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+            prefs.reload();
+            return prefs.getBoolean("assistantEnabled", true);
+        }
+    };
+
+    private XC_MethodHook prefsHook = new XC_MethodHook() {
+        @Override
+        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+            String key = (String) param.args[0];
+            if (key.equals("key_opa_eligible") || key.equals("opa_enabled")) {
+                prefs.reload();
+                if (prefs.getBoolean("assistantEnabled", true))
+                    param.setResult(true);
+            }
+        }
+    };
+
+    private XC_MethodHook baseBundleHook = new XC_MethodHook() {
+        @Override
+        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+            String key = (String) param.args[0];
+            if (key.equals("from_hotword")) {
+                prefs.reload();
+                if (prefs.getBoolean("assistantEnabled", true))
+                    param.setResult(false);
+            }
+        }
+    };
+
+    private XC_MethodHook systemPropHook = new XC_MethodHook() {
+        @Override
+        protected void beforeHookedMethod(XC_MethodHook.MethodHookParam param) throws Throwable {
+            String key = (String) param.args[0];
+            if (key.equals("ro.opa.eligible_device")) {
+                prefs.reload();
+                if (prefs.getBoolean("assistantEnabled", true))
+                    param.setResult(true);
+            }
+        }
+    };
+
+    private XC_MethodHook intentHook1 = new XC_MethodHook() {
+        @Override
+        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+            String action = (String) getObjectField(param.thisObject, "mAction");
+            if (Intent.ACTION_POWER_DISCONNECTED.equals(action)) {
+                prefs.reload();
+                if (prefs.getBoolean("enableOKGoogleEverywhere", false))
+                    param.setResult(Intent.ACTION_POWER_CONNECTED);
+            }
+        }
+    };
+
+    private XC_MethodHook intentHook2 = new XC_MethodHook() {
         @Override
         protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-            prefs.reload();
-            boolean assistantEnabled = prefs.getBoolean("assistantEnabled", true);
-            if(assistantEnabled) {
-                SharedPreferences googlePrefs = (SharedPreferences) getObjectField(param.thisObject, sharedPreferencesVariable);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD) {
-                    googlePrefs.edit().putBoolean("key_opa_eligible", true)
-                            .putBoolean("opa_enabled", true).apply();
-                }
-            }
-        }
-    };
-
-    private XC_MethodHook detectionMethod1Hook = new XC_MethodHook() {
-        @Override
-        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-            prefs.reload();
-            boolean assistantEnabled = prefs.getBoolean("assistantEnabled", true);
-            if(assistantEnabled) {
-                param.args[0] = true;
-            }
-        }
-    };
-
-    private XC_MethodReplacement detectionMethod2Hook = new XC_MethodReplacement() {
-        @Override
-        protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-            prefs.reload();
-            return prefs.getBoolean("assistantEnabled", true);
-        }
-    };
-
-    private XC_MethodReplacement detectionMethod3Hook = new XC_MethodReplacement() {
-        @Override
-        protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-            prefs.reload();
-            return prefs.getBoolean("assistantEnabled", true);
-        }
-    };
-
-    private XC_MethodReplacement detectionMethod4Hook = new XC_MethodReplacement() {
-        @Override
-        protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-            prefs.reload();
-            return prefs.getBoolean("assistantEnabled", true);
-        }
-    };
-
-    private XC_MethodHook sharedUtilsMethodHook = new XC_MethodHook() {
-        @Override
-        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-            if (param.args == null)
-                return;
-            if (param.args.length < 1)
-                return;
-            if (!(param.args[0] instanceof String))
-                return;
-            prefs.reload();
+            String action = (String) getObjectField(param.thisObject, "mAction");
             String key = (String) param.args[0];
-            boolean assistantEnabled = prefs.getBoolean("assistantEnabled", true);
-            if (key.equals("ro.opa.eligible_device")&&assistantEnabled) {
-                param.setResult(true);
-            }
-        }
-    };
-
-    private XC_MethodHook hotwordDetectionMethodHook = new XC_MethodHook() {
-        @Override
-        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-            prefs.reload();
-            if(prefs.getBoolean("assistantEnabled", true))
-            {
-                param.setResult(false);
-            }
-        }
-    };
-
-    private XC_MethodHook broadcastListenerServiceMethodHook = new XC_MethodHook() {
-        @Override
-        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-            prefs.reload();
-            boolean enableOKGoogleEverywhere = prefs.getBoolean("enableOKGoogleEverywhere", false);
-            if(enableOKGoogleEverywhere) {
-                param.args[1] = true;
+            if (Intent.ACTION_BATTERY_CHANGED.equals(action) && key.equals(BatteryManager.EXTRA_STATUS)) {
+                prefs.reload();
+                if (prefs.getBoolean("enableOKGoogleEverywhere", false))
+                    param.setResult(BatteryManager.BATTERY_STATUS_CHARGING);
             }
         }
     };
