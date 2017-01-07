@@ -33,6 +33,7 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
     private String[] detectionMethods;
     private String assistantClassName;
     private String prefsClassName;
+    private Boolean baseBundleHookNeeded = false;
 
     @Override
     public void initZygote(IXposedHookZygoteInit.StartupParam startupParam) throws Throwable {
@@ -49,8 +50,10 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
                 Class prefsClass = findClass(GSA_PACKAGE + prefsClassName, lpparam.classLoader);
                 Class systemPropClass = findClass("android.os.SystemProperties", lpparam.classLoader);
 
-                // Spoof_hotword value in bundles so that the Setup Ok Google screen never shows up
-                findAndHookMethod(BaseBundle.class, "getBoolean", String.class, boolean.class, baseBundleHook);
+                // Spoof_hotword value in bundles so that the Setup Ok Google screen never shows up, relevant for versions lower than 6.10
+                if(baseBundleHookNeeded){
+                    findAndHookMethod(BaseBundle.class, "getBoolean", String.class, boolean.class, baseBundleHook);
+                }
 
                 // Spoof build.prop values
                 findAndHookMethod(systemPropClass, "getBoolean", String.class, boolean.class, systemPropHook);
@@ -94,18 +97,22 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
             assistantClassName = ".assistant.a.e";
             detectionMethods = new String[] {"oZ", "pb"};
             prefsClassName = ".search.core.preferences.bf";
+            baseBundleHookNeeded = true;
         } else if (versionName.matches("6.7.*")) {
             assistantClassName = ".assistant.a.e";
             detectionMethods = new String[] {"pb", "pd"};
             prefsClassName = ".search.core.preferences.bg";
+            baseBundleHookNeeded = true;
         } else if (versionName.matches("6.8.*")) {
             assistantClassName = ".assistant.a.e";
             detectionMethods = new String[] {"pT", "pV"};
             prefsClassName = ".search.core.preferences.bg";
+            baseBundleHookNeeded = true;
         } else if (versionName.matches("6.9.*")) {
             assistantClassName = ".assistant.shared.f";
             detectionMethods = new String[] {"ro", "rq", "rr"};
             prefsClassName = ".search.core.preferences.bk";
+            baseBundleHookNeeded = true;
         } else if (versionName.matches("6.10.*")) {
             assistantClassName = ".assistant.shared.h";
             detectionMethods = new String[] {"rC", "rE", "rF"};
