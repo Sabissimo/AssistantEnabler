@@ -30,8 +30,7 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
     private static final String GSA_PACKAGE = "com.google.android.apps.gsa";
     private static final String TELEPHONY_CLASS = "android.telephony.TelephonyManager";
     private static final List<String> NOW_PACKAGE_NAMES = new ArrayList<>(Arrays.asList("com.google.android.gms", "com.google.android.apps.maps"));
-    private String detectionMethod1;
-    private String detectionMethod2;
+    private String[] detectionMethods;
     private String assistantClassName;
     private String prefsClassName;
 
@@ -67,8 +66,8 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
                 findAndHookMethod(prefsClass, "getBoolean", String.class, boolean.class, prefsHook);
 
                 // TODO: Find a way to make them name-independent
-                findAndHookMethod(assistantClass, detectionMethod1, detectionMethodHook);
-                findAndHookMethod(assistantClass, detectionMethod2, detectionMethodHook);
+                for (String method : detectionMethods)
+                    findAndHookMethod(assistantClass, method, detectionMethodHook);
             } catch (Throwable t) {
                 log(t);
             }
@@ -93,28 +92,23 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
 
         if (versionName.matches("6.6.*")) {
             assistantClassName = ".assistant.a.e";
-            detectionMethod1 = "oZ";
-            detectionMethod2 = "pb";
+            detectionMethods = new String[] {"oZ", "pb"};
             prefsClassName = ".search.core.preferences.bf";
         } else if (versionName.matches("6.7.*")) {
             assistantClassName = ".assistant.a.e";
-            detectionMethod1 = "pb";
-            detectionMethod2 = "pd";
+            detectionMethods = new String[] {"pb", "pd"};
             prefsClassName = ".search.core.preferences.bg";
         } else if (versionName.matches("6.8.*")) {
             assistantClassName = ".assistant.a.e";
-            detectionMethod1 = "pT";
-            detectionMethod2 = "pV";
+            detectionMethods = new String[] {"pT", "pV"};
             prefsClassName = ".search.core.preferences.bg";
         } else if (versionName.matches("6.9.*")) {
             assistantClassName = ".assistant.shared.f";
-            detectionMethod1 = "ro";
-            detectionMethod2 = "rq";
+            detectionMethods = new String[] {"ro", "rq", "rr"};
             prefsClassName = ".search.core.preferences.bk";
         } else if (versionName.matches("6.10.*")) {
             assistantClassName = ".assistant.shared.h";
-            detectionMethod1 = "rC";
-            detectionMethod2 = "rE";
+            detectionMethods = new String[] {"rC", "rE", "rF"};
             prefsClassName = ".search.core.preferences.bl";
         } else {
             return false;
