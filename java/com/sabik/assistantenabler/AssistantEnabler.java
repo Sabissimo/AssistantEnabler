@@ -157,7 +157,7 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
         @Override
         protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
             String key = (String) param.args[0];
-            if (key.equals("key_opa_eligible") || key.equals("opa_enabled")) {
+            if (key.equals("key_opa_eligible")) {
                 prefs.reload();
                 if (prefs.getBoolean("assistantEnabled", true))
                     param.setResult(true);
