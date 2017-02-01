@@ -125,6 +125,10 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
             assistantClassName = ".assistant.shared.h";
             detectionMethods = new String[] {"sc", "se", "sf"};
             prefsClassName = ".search.core.preferences.bl";
+        } else if (versionName.matches("6.12.*")) {
+            assistantClassName = ".assistant.shared.i";
+            detectionMethods = new String[] {"rS", "rU", "rV"};
+            prefsClassName = ".search.core.preferences.bl";
         } else {
             return false;
         }
