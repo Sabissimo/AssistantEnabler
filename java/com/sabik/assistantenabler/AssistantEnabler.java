@@ -5,10 +5,13 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.BaseBundle;
 import android.os.BatteryManager;
+import android.os.Build;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.IXposedHookZygoteInit;
@@ -32,6 +35,8 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
     private static final List<String> NOW_PACKAGE_NAMES = new ArrayList<>(Arrays.asList("com.google.android.gms", "com.google.android.apps.maps"));
     private String[] detectionMethods;
     private String assistantClassName;
+    private String languageClassName = "";
+    private String languageMethodName = "";
     private String prefsClassName;
     private Boolean baseBundleHookNeeded = false;
 
@@ -44,33 +49,44 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
     @Override
     public void handleLoadPackage(LoadPackageParam lpparam) throws Throwable {
         prefs.reload();
-        if (GOOGLE_PACKAGE_NAME.equals(lpparam.packageName) && checkVersion(lpparam)) {
+        if (GOOGLE_PACKAGE_NAME.equals(lpparam.packageName)) {
             try {
-                Class assistantClass = findClass(GSA_PACKAGE + assistantClassName, lpparam.classLoader);
-                Class prefsClass = findClass(GSA_PACKAGE + prefsClassName, lpparam.classLoader);
-                Class systemPropClass = findClass("android.os.SystemProperties", lpparam.classLoader);
+                Boolean assistantHooksNeeded = checkVersion(lpparam);
+                if(assistantHooksNeeded){
+                    Class assistantClass = findClass(GSA_PACKAGE + assistantClassName, lpparam.classLoader);
+                    Class prefsClass = findClass(GSA_PACKAGE + prefsClassName, lpparam.classLoader);
+                    Class systemPropClass = findClass("android.os.SystemProperties", lpparam.classLoader);
 
-                // Spoof_hotword value in bundles so that the Setup Ok Google screen never shows up, relevant for versions lower than 6.10
-                if(baseBundleHookNeeded){
-                    findAndHookMethod(BaseBundle.class, "getBoolean", String.class, boolean.class, baseBundleHook);
+                    // Spoof_hotword value in bundles so that the Setup Ok Google screen never shows up, relevant for versions lower than 6.10
+                    if(baseBundleHookNeeded){
+                        findAndHookMethod(BaseBundle.class, "getBoolean", String.class, boolean.class, baseBundleHook);
+                    }
+
+                    // Spoof build.prop values
+                    findAndHookMethod(systemPropClass, "getBoolean", String.class, boolean.class, systemPropHook);
+
+                    // Spoof opa-related values in config file
+                    // TODO: Find a way to make them name-independent
+                    findAndHookMethod(prefsClass, "getBoolean", String.class, boolean.class, prefsHook);
+
+                    // TODO: Find a way to make them name-independent
+                    for (String method : detectionMethods)
+                        findAndHookMethod(assistantClass, method, detectionMethodHook);
                 }
 
-                // Spoof build.prop values
-                findAndHookMethod(systemPropClass, "getBoolean", String.class, boolean.class, systemPropHook);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    if(!Objects.equals(languageClassName, "")) {
+                        Class languageClass = findClass(GSA_PACKAGE + languageClassName, lpparam.classLoader);
+                        findAndHookMethod(languageClass, languageMethodName, languageHook);
+                        Log.d("sabissimo","all good");
+                    }
+                }
 
                 // If the power has disconnected, tell Google it has connected instead
                 findAndHookMethod(Intent.class, "getAction", intentHook1);
 
                 // If Google asks status for BATTERY_CHANGED, tell it it's charging
                 findAndHookMethod(Intent.class, "getIntExtra", String.class, int.class, intentHook2);
-
-                // Spoof opa-related values in config file
-                // TODO: Find a way to make them name-independent
-                findAndHookMethod(prefsClass, "getBoolean", String.class, boolean.class, prefsHook);
-
-                // TODO: Find a way to make them name-independent
-                for (String method : detectionMethods)
-                    findAndHookMethod(assistantClass, method, detectionMethodHook);
             } catch (Throwable t) {
                 log(t);
             }
@@ -117,6 +133,7 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
             assistantClassName = ".assistant.shared.h";
             detectionMethods = new String[] {"rC", "rE", "rF"};
             prefsClassName = ".search.core.preferences.bl";
+            languageClassName = "";
         } else if (versionName.matches("6.11.13.*")||versionName.matches("6.11.15.*")||versionName.matches("6.11.16.*")) {
             assistantClassName = ".assistant.shared.h";
             detectionMethods = new String[] {"sb", "sd", "se"};
@@ -129,7 +146,13 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
             assistantClassName = ".assistant.shared.i";
             detectionMethods = new String[] {"rS", "rU", "rV"};
             prefsClassName = ".search.core.preferences.bl";
-        } else {
+        } else if (versionName.matches("6.13.*")) {
+            assistantClassName = ".assistant.shared.i";
+            detectionMethods = new String[] {"rU", "rX", "rY"};
+            prefsClassName = ".search.core.preferences.bl";
+        } else if (versionName.matches("6.14.*")) {
+            languageClassName = ".assistant.shared.o";
+            languageMethodName = "sr";
             return false;
         }
 
@@ -225,4 +248,14 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
             }
         }
     };
+
+    private XC_MethodHook languageHook = new XC_MethodHook() {
+        @Override
+        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+            prefs.reload();
+            if (prefs.getBoolean("assistantEnabled", true))
+                param.setResult("en-US");
+        }
+    };
+
 }
