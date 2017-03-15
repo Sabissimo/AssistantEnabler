@@ -154,6 +154,10 @@ public class AssistantEnabler implements IXposedHookZygoteInit, IXposedHookLoadP
             languageClassName = ".assistant.shared.o";
             languageMethodName = "sr";
             return false;
+        } else if (versionName.matches("6.15.*")) {
+            languageClassName = ".assistant.shared.o";
+            languageMethodName = "sz";
+            return false;
         }
 
         return true;
